@@ -1,37 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "../../config/db";
 
-// 1️⃣ Create Order (dummy payment)
-export const createOrder = async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.id; // from auth middleware
-    const { items, total_price } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Items are required" });
-    }
-
-    // Dummy payment integration: 90% success, 10% failed
-    const paymentStatus = Math.random() < 0.9 ? "SUCCESS" : "FAILED";
-
-    const [result] = await pool.query(
-      `INSERT INTO orders (user_id, items, total_price, payment_status)
-       VALUES (?, ?, ?, ?)`,
-      [userId, JSON.stringify(items), total_price, paymentStatus]
-    );
-
-    return res.status(201).json({
-      message: "Order created",
-      orderId: (result as any).insertId,
-      paymentStatus,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-// 2️⃣ Get Orders for logged-in user (with pagination)
+// Get Orders for logged-in user (with pagination)
 export const getUserOrders = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -78,7 +48,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
   }
 };
 
-// 3️⃣ Get all orders (admin, with pagination)
+//Get all orders (admin, with pagination)
 export const getAllOrders = async (req: Request, res: Response) => {
   try {
     const { page = "1", limit = "10", status } = req.query;
@@ -124,7 +94,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
   }
 };
 
-// 4️⃣ Update order status (admin)
+//Update order status (admin)
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;

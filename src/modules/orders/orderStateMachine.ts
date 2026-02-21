@@ -1,9 +1,8 @@
 const transitions: any = {
-  PLACED: ["CONFIRMED"],
-  CONFIRMED: ["PREPARING"],
-  PREPARING: ["READY"],
-  READY: ["OUT_FOR_DELIVERY"],
-  OUT_FOR_DELIVERY: ["DELIVERED"],
+  ORDER_RECEIVED: ["ORDER_RECEIVED"],
+  PREPARING: ["PREPARING"],
+  READY: ["READY"],
+  COMPLETED: ["COMPLETED"],
 };
 
 export const canTransition = (current: string, next: string) => {
