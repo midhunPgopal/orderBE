@@ -61,7 +61,7 @@ export const getAllOrders = async (req: Request, res: Response) => {
     const params: any[] = [];
 
     if (status) {
-      baseQuery += ` AND order_status = ?`;
+      baseQuery += ` AND status = ?`;
       params.push(status);
     }
 
