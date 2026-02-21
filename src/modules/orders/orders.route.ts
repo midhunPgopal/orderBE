@@ -4,6 +4,7 @@ import {
   getAllOrders,
   updateOrderStatus,
   getOrderById,
+  validateCart,
 } from "./orders.controller";
 import { authorizeAdmin } from "../../middlewares/role.middleware";
 import { createRazorpayOrder, verifyPayment } from "./payment.controller";
@@ -25,5 +26,7 @@ router.get("/:orderId", getOrderById);
 router.post("/create-order", createRazorpayOrder);
 
 router.post("/verify-payment", verifyPayment);
+
+router.post("/validateCart", validateCart)
 
 export default router;

@@ -163,3 +163,48 @@ export const getOrderById = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const validateCart = async (req: Request, res: Response) => {
+  try {
+    const { cart } = req.body;
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    const mismatches: any[] = [];
+
+    // Loop through cart items to check against DB
+    for (const item of cart) {
+      const [rows] = await pool.query(
+        `SELECT name, price, availability FROM menu_items WHERE id = ?`,
+        [item.id]
+      );
+
+      if ((rows as any).length === 0) {
+        mismatches.push({ id: item.id, message: "Item not found in DB" });
+        continue;
+      }
+
+      const menuItem = (rows as any)[0];
+
+      if (menuItem.price !== item.price || !menuItem.availability) {
+        mismatches.push({
+          id: item.id,
+          name: menuItem.name,
+          cartPrice: item.price,
+          dbPrice: menuItem.price,
+          difference: menuItem.price - item.price,
+        });
+      }
+    }
+
+    if (mismatches.length > 0) {
+      return res.status(200).json({valid: false});
+    }
+
+    return res.status(200).json({ valid: true});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to validate cart", error: (error as any).message });
+  }
+};
