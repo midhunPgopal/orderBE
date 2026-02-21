@@ -4,6 +4,7 @@ import { razorpay } from "../../config/razorpay";
 import crypto from "crypto";
 import { pool } from "../../config/db";
 import { OrderStatus, PaymmentStatus } from "../../models/role";
+import { getIO } from "../../sockets/socket";
 
 export const createRazorpayOrder = async (req: Request, res: Response) => {
     const connection = await pool.getConnection(); // dedicated connection for transaction
@@ -78,6 +79,11 @@ export const createRazorpayOrder = async (req: Request, res: Response) => {
         }
 
         await connection.commit(); // commit transaction
+
+        //websocket
+        const io = getIO();
+        io.to("kitchen-room").emit("new-order");
+
         res.status(200).json(order);
     } catch (error) {
         await connection.rollback(); // rollback if any error
@@ -110,6 +116,11 @@ export const verifyPayment = async (req: Request, res: Response) => {
             WHERE odr_id = ?`,
             [paymentStatus, razorpay_payment_id, orderStatus, orderId]
         );
+
+        //websocket
+        const io = getIO();
+        io.to("kitchen-room").emit("order-paid", { orderId, orderStatus, paymentStatus });
+
         return res.status(paymentSuccess ? 200 : 400)
             .json({ success: paymentSuccess })
     } catch (error) {

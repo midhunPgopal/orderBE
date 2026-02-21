@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pool } from "../../config/db";
+import { getIO } from "../../sockets/socket";
 
 // Get Orders for logged-in user (with pagination)
 export const getUserOrders = async (req: Request, res: Response) => {
@@ -109,6 +110,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       [order_status, orderId]
     );
 
+    const io = getIO();
+    
+    // Notify kitchen/orders page
+    io.to("kitchen-room").emit("order-updated", {
+      orderId,
+      status: order_status,
+    });
+
     return res.status(200).json({ message: "Order status updated" });
   } catch (error) {
     console.error(error);
@@ -201,10 +210,10 @@ export const validateCart = async (req: Request, res: Response) => {
     console.log(mismatches);
 
     if (mismatches.length > 0) {
-      return res.status(200).json({valid: false});
+      return res.status(200).json({ valid: false });
     }
 
-    return res.status(200).json({ valid: true});
+    return res.status(200).json({ valid: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to validate cart", error: (error as any).message });
