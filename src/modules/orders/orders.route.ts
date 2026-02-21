@@ -20,7 +20,7 @@ router.get("/all", authorizeAdmin, getAllOrders);
 router.put("/:orderId/status", authorizeAdmin, updateOrderStatus);
 
 // User or Admin can fetch order by ID
-router.get("/orders/:orderId", getOrderById);
+router.get("/:orderId", getOrderById);
 
 router.post("/create-order", createRazorpayOrder);
 

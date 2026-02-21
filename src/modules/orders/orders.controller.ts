@@ -15,7 +15,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
     const params: any[] = [userId];
 
     if (status) {
-      baseQuery += ` AND order_status = ?`;
+      baseQuery += ` AND status = ?`;
       params.push(status);
     }
 
@@ -105,7 +105,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
 
     await pool.query(
-      `UPDATE orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      `UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       [order_status, orderId]
     );
 
@@ -123,23 +123,41 @@ export const getOrderById = async (req: Request, res: Response) => {
     if (!(req as any).user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    if (!orderId) {
+      return res.status(400).json({ message: "Order ID is required" });
+    }
 
+    // 1️⃣ Fetch the order
     let query = "SELECT * FROM orders WHERE id = ?";
     const params: any[] = [orderId];
 
-    // If user is not admin, restrict to their own orders
+    // Restrict to user's own orders if not admin
     if ((req as any).user.role !== "ADMIN") {
       query += " AND user_id = ?";
       params.push((req as any).user.id);
     }
 
-    const [rows] = await pool.query(query, params);
+    const [orderRows] = await pool.query(query, params);
 
-    if ((rows as any).length === 0) {
+    if ((orderRows as any).length === 0) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    return res.status(200).json((rows as any)[0]);
+    const order = (orderRows as any)[0];
+
+    //Fetch the order items
+    const [itemRows] = await pool.query(
+      `SELECT oi.menu_item_id, oi.quantity, oi.price_at_time, mi.name AS menu_item_name
+       FROM order_items oi
+       JOIN menu_items mi ON oi.menu_item_id = mi.id
+       WHERE oi.order_id = ?`,
+      [orderId]
+    );
+
+    //Attach items to order
+    order.items = itemRows;
+
+    return res.status(200).json(order);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
