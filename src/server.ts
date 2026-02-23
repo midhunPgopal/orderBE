@@ -10,10 +10,8 @@ import { authenticate } from "./middlewares/auth.middleware";
 import cookieParser from "cookie-parser";
 import { initSocket } from "./sockets/socket";
 
-const app: Application = express();
-
-// 🔥 Create HTTP server from Express
-const server = http.createServer(app);
+export const app: Application = express();
+export const server = http.createServer(app);
 
 app.use(
   cors({
@@ -37,8 +35,6 @@ app.get("/health", async (req: Request, res: Response) => {
       timestamp: new Date(),
     });
   } catch (error) {
-    console.error("Health check failed:", error);
-
     res.status(500).json({
       status: "ERROR",
       database: "Disconnected",
@@ -52,18 +48,16 @@ app.use("/api/orders", authenticate, orderRoutes);
 
 app.use(
   (err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error("Unhandled Error:", err);
     res.status(500).json({
       message: "Internal Server Error",
     });
   }
 );
 
-const startServer = async () => {
+export const startServer = async () => {
   try {
     await connectDB();
-
-    // 🔥 Initialize socket AFTER DB connects
+    // 🔥 Initialize socket AFTER DB connects 
     initSocket(server);
 
     server.listen(config.port, () => {
@@ -78,12 +72,15 @@ const startServer = async () => {
   }
 };
 
-startServer();
-
-process.on("SIGINT", async () => {
-  console.log("🛑 Gracefully shutting down...");
-  await pool.end();
-  server.close(() => {
-    process.exit(0);
+export const registerShutdown = () => {
+  process.on("SIGINT", async () => {
+    console.log("🛑 Gracefully shutting down...");
+    await pool.end();
+    server.close(() => process.exit(0));
   });
-});
+};
+
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+  registerShutdown();
+}
